@@ -1,0 +1,9 @@
+version: "2"
+services:
+  compojure:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/code
+      - ~/.m2:/root/.m2/

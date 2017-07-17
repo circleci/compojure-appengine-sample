@@ -1,0 +1,68 @@
+version: 2.0
+jobs:
+  build:
+    docker:
+      - image: clojure:alpine
+    working_directory: /home/circleci/compojure-app
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - compojure-app-jars-v1-{{ checksum "project.clj" }}
+
+      - run:
+          name: Download dependencies
+          command: lein deps
+          working_directory: /home/circleci/compojure-app
+
+      - run:
+          name: Run server tests
+          command: lein test
+          working_directory: /home/circleci/compojure-app
+      - save_cache:
+          key: compojure-app-jars-v1-{{ checksum "project.clj" }}
+          paths:
+            - /home/circleci/.m2
+
+  deploy:
+    docker:
+      - image: google/cloud-sdk:alpine
+    working_directory: /home/circleci/compojure-app
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - compojure-app-jars-v1-{{ checksum "project.clj" }}
+            - compojure-app-machine-jars-v1
+
+      - run:
+          name: Authenticate with Google Cloud
+          command: |
+            echo $GCLOUD_KEY_JSON > ~/.gcloud-key
+            gcloud auth activate-service-account --key-file=~/.gcloud-key
+
+      - run:
+          name: Deploy compojure-app to Google App Engine
+          command: gcloud app deploy
+
+      - run:
+          name: discarding all changes
+          command: git checkout -- .
+
+      - save_cache:
+          key: compojure-app-jars-v1-a{{ checksum "project.clj" }}
+          paths:
+            - /home/circleci/.m2
+
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - build
+      - deploy:
+          requires:
+            - build
+          filters:
+              only: master
