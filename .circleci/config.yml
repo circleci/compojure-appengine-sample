@@ -26,6 +26,10 @@ jobs:
             - /home/circleci/.m2
 
   deploy:
+    filters:
+      branches:
+        only:
+          - master
     docker:
       - image: google/cloud-sdk:alpine
     working_directory: /home/circleci/compojure-app
@@ -52,7 +56,7 @@ jobs:
           command: git checkout -- .
 
       - save_cache:
-          key: compojure-app-jars-v1-a{{ checksum "project.clj" }}
+          key: compojure-app-jars-v1-{{ checksum "project.clj" }}
           paths:
             - /home/circleci/.m2
 
@@ -64,5 +68,3 @@ workflows:
       - deploy:
           requires:
             - build
-          filters:
-              only: master
