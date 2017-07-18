@@ -44,8 +44,8 @@ jobs:
       - run:
           name: Authenticate with Google Cloud
           command: |
-            echo $GCLOUD_KEY_JSON > ~/.gcloud-key
-            gcloud auth activate-service-account --key-file=~/.gcloud-key
+            echo $GCLOUD_KEY_JSON > /home/circleci/.gcloud-key
+            gcloud auth activate-service-account --key-file=/home/circleci/.gcloud-key
 
       - run:
           name: Deploy compojure-app to Google App Engine
