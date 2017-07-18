@@ -49,7 +49,9 @@ jobs:
 
       - run:
           name: Deploy compojure-app to Google App Engine
-          command: gcloud app deploy
+          command: |
+            gcloud config set project clojure-sample-project
+            gcloud app deploy
 
       - run:
           name: discarding all changes
