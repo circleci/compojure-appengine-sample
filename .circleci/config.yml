@@ -2,71 +2,57 @@ version: 2.0
 jobs:
   build:
     docker:
-      - image: clojure:alpine
+    - image: clojure:alpine
     working_directory: /home/circleci/compojure-app
     steps:
-      - checkout
-
-      - restore_cache:
-          keys:
-            - compojure-app-jars-v1-{{ checksum "project.clj" }}
-
-      - run:
-          name: Download dependencies
-          command: lein deps
-          working_directory: /home/circleci/compojure-app
-
-      - run:
-          name: Run server tests
-          command: lein test
-          working_directory: /home/circleci/compojure-app
-      - save_cache:
-          key: compojure-app-jars-v1-{{ checksum "project.clj" }}
-          paths:
-            - /home/circleci/.m2
-
+    - checkout
+    - restore_cache:
+        keys:
+        - compojure-app-jars-v1-{{ checksum "project.clj" }}
+    - run:
+        name: Download dependencies
+        command: lein deps
+        working_directory: /home/circleci/compojure-app
+    - run:
+        name: Run server tests
+        command: lein test
+        working_directory: /home/circleci/compojure-app
+    - save_cache:
+        key: compojure-app-jars-v1-{{ checksum "project.clj" }}
+        paths:
+        - /home/circleci/.m2
   deploy:
-    filters:
-      branches:
-        only:
-          - master
+    description: |
+      Deploy a project to Google App Engine. Please specify
+      the Google Cloud key in the $GCLOUD_KEY_JSON environment
+      variable.
     docker:
-      - image: google/cloud-sdk:alpine
-    working_directory: /home/circleci/compojure-app
+    - image: google/cloud-sdk:alpine
     steps:
-      - checkout
-
-      - restore_cache:
-          keys:
-            - compojure-app-jars-v1-{{ checksum "project.clj" }}
-            - compojure-app-machine-jars-v1
-
-      - run:
-          name: Authenticate with Google Cloud
-          command: |
-            echo $GCLOUD_KEY_JSON > /home/circleci/.gcloud-key
-            gcloud auth activate-service-account --key-file=/home/circleci/.gcloud-key
-
-      - run:
-          name: Deploy compojure-app to Google App Engine
-          command: |
-            gcloud config set project clojure-sample-project
-            gcloud app deploy
-
-      - run:
-          name: discarding all changes
-          command: git checkout -- .
-
-      - save_cache:
-          key: compojure-app-jars-v1-{{ checksum "project.clj" }}
-          paths:
-            - /home/circleci/.m2
-
+    - checkout
+    - run:
+        name: Authenticate with Google Cloud
+        command: |
+          if [[ -z $GCLOUD_KEY_JSON ]] ; then echo "No Google Cloud key JSON found. Please make sure that you've uploaded the Google Cloud key JSON in the $GCLOUD_KEY_JSON environment variable in your project settings." ; fi
+          echo $GCLOUD_KEY_JSON > /home/circleci/.gcloud-key
+          gcloud auth activate-service-account --key-file=/home/circleci/.gcloud-key
+    - run:
+        name: Deploy compojure-app to Google App Engine
+        command: |
+          gcloud config set project clojure-sample-project
+          gcloud app deploy
+    - run:
+        name: discarding all changes
+        command: git checkout -- .
 workflows:
   version: 2
   build-and-deploy:
     jobs:
-      - build
-      - deploy:
-          requires:
-            - build
+    - build: {}
+    - deploy:
+        filters:
+          only:
+          - master
+        requires:
+        - build
+

@@ -1,0 +1,30 @@
+description: |
+  Deploy a project to Google App Engine. Please specify
+  the Google Cloud key in the $GCLOUD_KEY_JSON environment
+  variable.
+
+parameters:
+  project_name:
+    type: string
+
+docker:
+  - image: google/cloud-sdk:alpine
+
+#working_directory: /home/circleci/appengine-deploy
+
+steps:
+- checkout
+- run:
+    name: Authenticate with Google Cloud
+    command: |
+      if [[ -z $GCLOUD_KEY_JSON ]] ; then echo "No Google Cloud key JSON found. Please make sure that you've uploaded the Google Cloud key JSON in the $GCLOUD_KEY_JSON environment variable in your project settings." ; fi
+      echo $GCLOUD_KEY_JSON > /home/circleci/.gcloud-key
+      gcloud auth activate-service-account --key-file=/home/circleci/.gcloud-key
+- run:
+    name: Deploy compojure-app to Google App Engine
+    command: |
+      gcloud config set project << parameters.project_name >>
+      gcloud app deploy
+- run:
+    name: discarding all changes
+    command: git checkout -- .

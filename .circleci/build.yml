@@ -1,0 +1,39 @@
+version: 2.0
+jobs:
+  build:
+    docker:
+      - image: clojure:alpine
+    working_directory: /home/circleci/compojure-app
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - compojure-app-jars-v1-{{ checksum "project.clj" }}
+
+      - run:
+          name: Download dependencies
+          command: lein deps
+          working_directory: /home/circleci/compojure-app
+
+      - run:
+          name: Run server tests
+          command: lein test
+          working_directory: /home/circleci/compojure-app
+      - save_cache:
+          key: compojure-app-jars-v1-{{ checksum "project.clj" }}
+          paths:
+            - /home/circleci/.m2
+
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - build
+      - appengine/deploy:
+          project_name: "clojure-sample-project"
+          requires:
+            - build
+          filters:
+            only:
+              - master
